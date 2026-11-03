@@ -1,3 +1,4 @@
+
 const tg = window.Telegram.WebApp;
 tg.expand();
 
@@ -5,118 +6,312 @@ const API_BASE = "https://trading-terminal-backend-wxs8.onrender.com";
 
 let chart = null;
 let candleSeries = null;
+let chartResizeObserver = null;
+let chartRequestId = 0;
 let currentSymbol = "BTC/USDT";
 
+// ---------------- USER ----------------
+
 function initUser() {
+    const userInfo = document.getElementById('user-info');
+
     if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-        document.getElementById('user-info').innerText = tg.initDataUnsafe.user.first_name;
+        userInfo.innerText = tg.initDataUnsafe.user.first_name;
     } else {
-        document.getElementById('user-info').innerText = "Dev User";
+        userInfo.innerText = "Dev User";
     }
 }
+
+// ---------------- NAVIGATION ----------------
 
 function switchTab(tabId) {
-    document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
-    document.getElementById(`view-${tabId}`).classList.add('active');
-    event.currentTarget.classList.add('active');
-    
-    if (tabId === 'dashboard') loadDashboard();
-    if (tabId === 'markets') loadMarkets();
-    if (tabId === 'trades') loadTrades();
+    document.querySelectorAll('.view').forEach(el =>
+        el.classList.remove('active')
+    );
+
+    document.querySelectorAll('.nav-btn').forEach(el =>
+        el.classList.remove('active')
+    );
+
+    const view = document.getElementById(`view-${tabId}`);
+    if (!view) return;
+
+    view.classList.add('active');
+
+    const tabs = ['dashboard', 'markets', 'trades'];
+    const index = tabs.indexOf(tabId);
+
+    if (index !== -1) {
+        document.querySelectorAll('.nav-btn')[index]
+            .classList.add('active');
+    }
+
+    if (tabId === 'dashboard') {
+        loadDashboard();
+    }
+
+    if (tabId === 'markets') {
+        loadMarkets();
+    }
+
+    if (tabId === 'trades') {
+        loadTrades();
+    }
 }
+
+// ---------------- API ----------------
 
 async function fetchAPI(endpoint, options = {}) {
-    const headers = {};
-    if (tg.initData) headers['X-Telegram-Init-Data'] = tg.initData;
-    if (options.method === 'POST') headers['Content-Type'] = 'application/json';
-    
+    const headers = { ...options.headers };
+
+    if (tg.initData) {
+        headers['X-Telegram-Init-Data'] = tg.initData;
+    }
+
+    if (options.method === 'POST') {
+        headers['Content-Type'] = 'application/json';
+    }
+
     try {
-        const res = await fetch(`${API_BASE}${endpoint}`, { headers, ...options });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const res = await fetch(`${API_BASE}${endpoint}`, {
+            ...options,
+            headers
+        });
+
+        if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`);
+        }
+
         return await res.json();
-    } catch (err) { 
+
+    } catch (err) {
         console.error("API Error:", err);
-        return null; 
+        return null;
     }
 }
+
+// ---------------- DASHBOARD ----------------
 
 async function loadDashboard() {
-    document.getElementById('paper-balance').innerText = "Loading...";
-    document.getElementById('latest-signal').innerText = "Loading...";
-
-    const account = await fetchAPI('/api/paper/account');
-    document.getElementById('paper-balance').innerText = account ? `$${account.balance.toFixed(2)}` : "DATA UNAVAILABLE";
-
-    const signal = await fetchAPI(`/api/signals/analyze?symbol=${currentSymbol}&market=crypto&timeframe=1h`);
+    const balanceEl = document.getElementById('paper-balance');
     const signalEl = document.getElementById('latest-signal');
     const tradeActions = document.getElementById('trade-actions');
-    
+
+    balanceEl.innerText = "Loading...";
+    signalEl.innerText = "Loading...";
+
+    const account = await fetchAPI('/api/paper/account');
+
+    if (account && Number.isFinite(Number(account.balance))) {
+        balanceEl.innerText =
+            `$${Number(account.balance).toFixed(2)}`;
+    } else {
+        balanceEl.innerText = "DATA UNAVAILABLE";
+    }
+
+    const signal = await fetchAPI(
+        `/api/signals/analyze?symbol=${encodeURIComponent(currentSymbol)}&market=crypto&timeframe=1h`
+    );
+
     if (signal && signal.action) {
-        let color = signal.action === 'BUY' ? 'var(--accent-green)' : signal.action === 'SELL' ? 'var(--accent-red)' : 'var(--text-muted)';
-        signalEl.innerHTML = `<div style="font-size: 24px; font-weight: bold; color: ${color}; margin-bottom: 10px;">${signal.action}</div><div style="color: var(--text-muted); font-size: 12px;">${signal.reasons.join("<br>• ")}</div>`;
-        
-        if (signal.action === 'BUY' || signal.action === 'SELL') {
-            tradeActions.style.display = 'flex';
-        } else {
-            tradeActions.style.display = 'none';
-        }
-    } else { 
-        signalEl.innerHTML = `<span style="color:red">DATA UNAVAILABLE</span>`; 
+        const color =
+            signal.action === 'BUY' ? 'var(--accent-green)' :
+            signal.action === 'SELL' ? 'var(--accent-red)' :
+            'var(--text-muted)';
+
+        const reasons = Array.isArray(signal.reasons)
+            ? signal.reasons
+            : [];
+
+        signalEl.innerHTML = `
+            <div style="
+                font-size:24px;
+                font-weight:bold;
+                color:${color};
+                margin-bottom:10px;
+            ">${signal.action}</div>
+
+            <div style="
+                color:var(--text-muted);
+                font-size:12px;
+            ">${reasons.join("<br>• ")}</div>
+        `;
+
+        tradeActions.style.display =
+            signal.action === 'BUY' || signal.action === 'SELL'
+                ? 'flex'
+                : 'none';
+
+    } else {
+        signalEl.innerHTML =
+            '<span style="color:red">DATA UNAVAILABLE</span>';
+
         tradeActions.style.display = 'none';
     }
-    
-    loadChart();
+
+    await loadChart();
 }
+
+// ---------------- CHART ----------------
 
 async function loadChart() {
-    if (typeof LightweightCharts === 'undefined') return;
-    
-    const chartContainer = document.getElementById('chart-container');
-    chartContainer.innerHTML = '<div style="color: #848e9c; text-align: center; margin-top: 130px;">Loading Chart...</div>';
+    const container = document.getElementById('chart-container');
 
-    const data = await fetchAPI(`/api/market/candles?symbol=${currentSymbol}&market=crypto&timeframe=1h&limit=100`);
-    
-    if (!data || !data.candles || data.candles.length === 0) {
-        chartContainer.innerHTML = '<div style="color: #f6465d; text-align: center; margin-top: 130px;">Chart Data Unavailable</div>';
+    if (typeof LightweightCharts === 'undefined') {
+        container.innerHTML = 'Chart library unavailable';
         return;
     }
-    
-    chartContainer.innerHTML = "";
 
+    const requestId = ++chartRequestId;
+    const symbol = currentSymbol;
+
+    // Create chart only once
     if (!chart) {
-        chart = LightweightCharts.createChart(chartContainer, {
-            width: chartContainer.clientWidth || 350, 
+        container.innerHTML = '';
+
+        chart = LightweightCharts.createChart(container, {
+            width: Math.max(container.clientWidth, 300),
             height: 300,
-            layout: { background: { color: 'transparent' }, textColor: '#848e9c' },
-            grid: { vertLines: { color: '#2b3139' }, horzLines: { color: '#2b3139' } },
-            timeScale: { timeVisible: true },
-            crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+
+            layout: {
+                background: { color: '#1e2329' },
+                textColor: '#848e9c'
+            },
+
+            grid: {
+                vertLines: { color: '#2b3139' },
+                horzLines: { color: '#2b3139' }
+            },
+
+            timeScale: {
+                timeVisible: true,
+                secondsVisible: false,
+                borderColor: '#2b3139'
+            },
+
+            rightPriceScale: {
+                borderColor: '#2b3139'
+            },
+
+            crosshair: {
+                mode: LightweightCharts.CrosshairMode.Normal
+            },
+
+            handleScroll: true,
+            handleScale: true
         });
-        candleSeries = chart.addCandlestickSeries({ 
-            upColor: '#0ecb81', downColor: '#f6465d', borderVisible: false, 
-            wickUpColor: '#0ecb81', wickDownColor: '#f6465d' 
+
+        candleSeries = chart.addCandlestickSeries({
+            upColor: '#0ecb81',
+            downColor: '#f6465d',
+            borderVisible: false,
+            wickUpColor: '#0ecb81',
+            wickDownColor: '#f6465d'
         });
+
+        // Automatic mobile resizing
+        if (window.ResizeObserver) {
+            chartResizeObserver = new ResizeObserver(() => {
+                if (chart && container.clientWidth > 0) {
+                    chart.resize(
+                        container.clientWidth,
+                        300
+                    );
+                }
+            });
+
+            chartResizeObserver.observe(container);
+        }
     }
-    
-    const formattedData = data.candles.map(c => ({ 
-        time: c.time, open: c.open, high: c.high, low: c.low, close: c.close 
-    }));
-    
-    candleSeries.setData(formattedData);
-    
-    setTimeout(() => {
-        if (chart) chart.timeScale().fitContent();
-    }, 300);
+
+    try {
+        const data = await fetchAPI(
+            `/api/market/candles?symbol=${encodeURIComponent(symbol)}&market=crypto&timeframe=1h&limit=100`
+        );
+
+        // Ignore old market requests
+        if (requestId !== chartRequestId) return;
+
+        if (!data || !Array.isArray(data.candles)) {
+            console.error("Invalid chart response:", data);
+            return;
+        }
+
+        const formattedData = data.candles.map(c => {
+            let time = c.time;
+
+            if (typeof time === 'string') {
+                if (/^\d+$/.test(time)) {
+                    time = Number(time);
+                } else {
+                    time = Math.floor(
+                        new Date(time).getTime() / 1000
+                    );
+                }
+            }
+
+            if (typeof time === 'number' && time > 1e12) {
+                time = Math.floor(time / 1000);
+            }
+
+            return {
+                time: time,
+                open: Number(c.open),
+                high: Number(c.high),
+                low: Number(c.low),
+                close: Number(c.close)
+            };
+        }).filter(c =>
+            Number.isFinite(c.time) &&
+            Number.isFinite(c.open) &&
+            Number.isFinite(c.high) &&
+            Number.isFinite(c.low) &&
+            Number.isFinite(c.close)
+        );
+
+        formattedData.sort((a, b) => a.time - b.time);
+
+        const uniqueData = formattedData.filter(
+            (c, i, arr) =>
+                i === 0 || c.time !== arr[i - 1].time
+        );
+
+        if (uniqueData.length === 0) {
+            console.error("No valid candles received");
+            return;
+        }
+
+        candleSeries.setData(uniqueData);
+
+        requestAnimationFrame(() => {
+            if (chart && container.clientWidth > 0) {
+                chart.resize(container.clientWidth, 300);
+                chart.timeScale().fitContent();
+            }
+        });
+
+        console.log(
+            `Chart loaded: ${symbol}, ${uniqueData.length} candles`
+        );
+
+    } catch (error) {
+        console.error("Chart Error:", error);
+    }
 }
+
+// ---------------- MARKETS ----------------
 
 async function loadMarkets() {
     const container = document.getElementById('market-list');
-    container.innerHTML = 'Loading...';
+
+    container.innerHTML = 'Loading markets...';
+
     const data = await fetchAPI('/api/market/symbols');
-    if (data && data.crypto) {
+
+    if (data && Array.isArray(data.crypto)) {
         container.innerHTML = data.crypto.map(sym => `
-            <div class="card" onclick="selectMarket('${sym}')">
+            <div class="card"
+                 onclick="selectMarket('${sym}')">
                 <strong>${sym}</strong>
             </div>
         `).join('');
@@ -128,29 +323,62 @@ async function loadMarkets() {
 function selectMarket(symbol) {
     currentSymbol = symbol;
     switchTab('dashboard');
-    setTimeout(loadDashboard, 100); 
 }
+
+// ---------------- PAPER TRADES ----------------
 
 async function loadTrades() {
     const container = document.getElementById('trades-list');
-    container.innerHTML = 'Loading...';
+
+    container.innerHTML = 'Loading trades...';
+
     const trades = await fetchAPI('/api/paper/trades');
-    if (trades && trades.length > 0) {
-        container.innerHTML = trades.map(t => `<div class="card" style="border-left: 4px solid ${t.side === 'BUY' ? 'var(--accent-green)' : 'var(--accent-red)'}"><strong>${t.symbol} - ${t.side}</strong><br>Entry: $${t.entry_price} | Qty: ${t.quantity}</div>`).join('');
-    } else { 
-        container.innerHTML = 'No trades found.'; 
+
+    if (Array.isArray(trades) && trades.length > 0) {
+        container.innerHTML = trades.map(t => `
+            <div class="card"
+                 style="border-left:4px solid ${
+                     t.side === 'BUY'
+                         ? 'var(--accent-green)'
+                         : 'var(--accent-red)'
+                 }">
+
+                <strong>${t.symbol} - ${t.side}</strong>
+                <br>
+                Entry: $${t.entry_price}
+                | Qty: ${t.quantity}
+
+            </div>
+        `).join('');
+    } else {
+        container.innerHTML = 'No trades found.';
     }
 }
 
+// ---------------- OPEN TRADE ----------------
+
 async function openTrade(side) {
-    const signal = await fetchAPI(`/api/signals/analyze?symbol=${currentSymbol}&market=crypto&timeframe=1h`);
+    if (side !== 'BUY' && side !== 'SELL') return;
+
+    const signal = await fetchAPI(
+        `/api/signals/analyze?symbol=${encodeURIComponent(currentSymbol)}&market=crypto&timeframe=1h`
+    );
+
     if (!signal || !signal.entry_zone) {
         alert("No valid entry zone. Please wait for a better signal.");
         return;
     }
 
-    const entryPrice = signal.entry_zone[1] || signal.indicators.ema9; 
+    const entryPrice = Number(
+        signal.entry_zone[1] || signal.indicators?.ema9
+    );
+
     const qty = 0.01;
+
+    if (!Number.isFinite(entryPrice) || entryPrice <= 0) {
+        alert("Invalid entry price.");
+        return;
+    }
 
     const trade = await fetchAPI('/api/paper/trade/open', {
         method: 'POST',
@@ -164,13 +392,22 @@ async function openTrade(side) {
 
     if (trade) {
         alert(`${side} Trade Opened at $${entryPrice.toFixed(2)}`);
-        loadDashboard();
+        await loadDashboard();
     } else {
-        alert("Failed to open trade.");
+        alert("Failed to open trade. Please check backend.");
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => { 
-    initUser(); 
-    setTimeout(loadDashboard, 1000);
+// ---------------- START APP ----------------
+
+document.addEventListener('DOMContentLoaded', () => {
+    initUser();
+
+    if (tg.ready) {
+        tg.ready();
+    }
+
+    setTimeout(() => {
+        loadDashboard();
+    }, 1000);
 });
