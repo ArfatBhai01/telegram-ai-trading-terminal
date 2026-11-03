@@ -2,6 +2,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import List
 import httpx
+import time
 
 from backend.config import get_settings
 from backend.market_data.base import MarketDataAdapter
@@ -24,7 +25,7 @@ class CryptoAdapter(MarketDataAdapter):
         try:
             url = f"{_settings.binance_base_url}/api/v3/klines"
             params = {"symbol": binance_symbol, "interval": interval, "limit": min(limit, 1000)}
-            async with httpx.AsyncClient(timeout=10.0) as client:
+            async with httpx.AsyncClient(timeout=5.0) as client:
                 response = await client.get(url, params=params)
                 if response.status_code == 200:
                     raw = response.json()
@@ -37,19 +38,44 @@ class CryptoAdapter(MarketDataAdapter):
         try:
             coin_map = {"BTCUSDT": "bitcoin", "ETHUSDT": "ethereum", "SOLUSDT": "solana", "BNBUSDT": "binancecoin", "XRPUSDT": "ripple", "ADAUSDT": "cardano", "DOGEUSDT": "dogecoin", "MATICUSDT": "matic-network", "DOTUSDT": "polkadot", "AVAXUSDT": "avalanche-2", "LINKUSDT": "chainlink"}
             coin_id = coin_map.get(binance_symbol)
-            if not coin_id:
-                return UnavailableResult(symbol=symbol, market="crypto", timeframe=timeframe, reason="Symbol unsupported in fallback", fetched_at=fetched_at)
-
-            cg_url = f"{_settings.coingecko_base_url}/coins/{coin_id}/ohlc"
-            cg_params = {"vs_currency": "usd", "days": "1" if timeframe in ["1m","5m","15m","1h"] else "7"}
-            
-            async with httpx.AsyncClient(timeout=15.0) as client:
-                res = await client.get(cg_url, params=cg_params)
-                if res.status_code == 200:
-                    raw = res.json()
-                    candles = [Candle(time=int(k[0]/1000), open=float(k[1]), high=float(k[2]), low=float(k[3]), close=float(k[4]), volume=0.0) for k in raw[-limit:]]
-                    return CandlesResult(symbol=symbol, market="crypto", timeframe=timeframe, source="coingecko_fallback", fetched_at=fetched_at, is_stale=True, candles=candles)
+            if coin_id:
+                cg_url = f"{_settings.coingecko_base_url}/coins/{coin_id}/ohlc"
+                cg_params = {"vs_currency": "usd", "days": "1" if timeframe in ["1m","5m","15m","1h"] else "7"}
+                async with httpx.AsyncClient(timeout=7.0) as client:
+                    res = await client.get(cg_url, params=cg_params)
+                    if res.status_code == 200:
+                        raw = res.json()
+                        candles = [Candle(time=int(k[0]/1000), open=float(k[1]), high=float(k[2]), low=float(k[3]), close=float(k[4]), volume=0.0) for k in raw[-limit:]]
+                        return CandlesResult(symbol=symbol, market="crypto", timeframe=timeframe, source="coingecko", fetched_at=fetched_at, is_stale=True, candles=candles)
         except Exception as e:
             print(f"CoinGecko failed: {e}")
 
-        return UnavailableResult(symbol=symbol, market="crypto", timeframe=timeframe, reason="Both data sources failed. Please retry.", fetched_at=fetched_at)
+        # 3. KRAKEN FALLBACK (Naya aur sabse reliable)
+        try:
+            kraken_map = {
+                "BTCUSDT": "XBTUSDT", "ETHUSDT": "ETHUSDT", "SOLUSDT": "SOLUSDT", 
+                "ADAUSDT": "ADAUSDT", "XRPUSDT": "XRPUSDT", "DOTUSDT": "DOTUSDT",
+                "LINKUSDT": "LINKUSDT", "AVAXUSDT": "AVAXUSDT", "DOGEUSDT": "XDGUSDT"
+            }
+            kraken_symbol = kraken_map.get(binance_symbol)
+            if kraken_symbol:
+                kraken_url = "https://api.kraken.com/0/public/OHLC"
+                kraken_params = {"pair": kraken_symbol, "interval": interval.replace('m', '').replace('h', '') if 'm' in interval or 'h' in interval else 60}
+                async with httpx.AsyncClient(timeout=7.0) as client:
+                    res = await client.get(kraken_url, params=kraken_params)
+                    if res.status_code == 200:
+                        data = res.json()
+                        if not data.get("error"):
+                            result_key = list(data["result"].keys())[0]
+                            raw = data["result"][result_key]
+                            candles = []
+                            for k in raw[-limit:]:
+                                candles.append(Candle(
+                                    time=int(k[0]), open=float(k[1]), high=float(k[2]), 
+                                    low=float(k[3]), close=float(k[4]), volume=float(k[6])
+                                ))
+                            return CandlesResult(symbol=symbol, market="crypto", timeframe=timeframe, source="kraken", fetched_at=fetched_at, is_stale=True, candles=candles)
+        except Exception as e:
+            print(f"Kraken failed: {e}")
+
+        return UnavailableResult(symbol=symbol, market="crypto", timeframe=timeframe, reason="All data sources failed. Please try again later.", fetched_at=fetched_at)
