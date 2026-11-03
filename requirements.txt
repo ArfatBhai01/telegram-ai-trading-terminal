@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+python-telegram-bot
+sqlalchemy
+psycopg2-binary
+alembic
+httpx
+pydantic
+pydantic-settings
+python-dotenv
+slowapi
+numpy
+init-data-py
+pytest
+pytest-asyncio
