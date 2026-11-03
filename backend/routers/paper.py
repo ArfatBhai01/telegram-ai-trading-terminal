@@ -3,6 +3,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+from datetime import datetime, timezone
 
 from backend.database import get_db
 from backend.models import User, PaperAccount, PaperTrade
@@ -17,8 +18,6 @@ class OpenTradeRequest(BaseModel):
     side: str  # BUY or SELL
     entry_price: float
     quantity: float
-    stop_loss: float | None = None
-    take_profit: float | None = None
 
 class CloseTradeRequest(BaseModel):
     exit_price: float
@@ -52,11 +51,14 @@ def open_trade(
         raise HTTPException(status_code=400, detail="Side must be BUY or SELL")
     
     account = get_or_create_account(current_user, db)
+    
+    # Cost calculate karein
     cost = request.entry_price * request.quantity
     
     if cost > account.balance:
         raise HTTPException(status_code=400, detail="Insufficient virtual balance.")
 
+    # Trade save karein
     trade = PaperTrade(
         account_id=account.id,
         symbol=request.symbol.upper(),
@@ -64,11 +66,10 @@ def open_trade(
         side=request.side.upper(),
         entry_price=request.entry_price,
         quantity=request.quantity,
-        stop_loss=request.stop_loss,
-        take_profit=request.take_profit,
         status="OPEN"
     )
     
+    # Balance deduct karein
     account.balance -= cost
     
     db.add(trade)
@@ -92,6 +93,7 @@ def close_trade(
 
     trade.exit_price = request.exit_price
     trade.status = "CLOSED"
+    trade.closed_at = datetime.now(timezone.utc)
     
     # PnL Calculation
     if trade.side == "BUY":
