@@ -46,11 +46,9 @@ async function loadDashboard() {
     document.getElementById('paper-balance').innerText = "Loading...";
     document.getElementById('latest-signal').innerText = "Loading...";
 
-    // Load Balance
     const account = await fetchAPI('/api/paper/account');
     document.getElementById('paper-balance').innerText = account ? `$${account.balance.toFixed(2)}` : "DATA UNAVAILABLE";
 
-    // Load Signal
     const signal = await fetchAPI('/api/signals/analyze?symbol=BTC/USDT&market=crypto&timeframe=1h');
     const signalEl = document.getElementById('latest-signal');
     
@@ -61,7 +59,6 @@ async function loadDashboard() {
         signalEl.innerHTML = `<span style="color:red">DATA UNAVAILABLE</span>`; 
     }
     
-    // Load Chart
     loadChart();
 }
 
@@ -70,6 +67,9 @@ async function loadChart() {
     
     const chartContainer = document.getElementById('chart-container');
     chartContainer.innerHTML = '<div style="color: #848e9c; text-align: center; margin-top: 130px;">Loading Chart...</div>';
+
+    // Thoda sa wait karke data fetch karein taaki backend ready ho
+    await new Promise(r => setTimeout(r, 1000)); 
 
     const data = await fetchAPI('/api/market/candles?symbol=BTC/USDT&market=crypto&timeframe=1h&limit=50');
     
@@ -81,11 +81,15 @@ async function loadChart() {
     chartContainer.innerHTML = "";
 
     if (!chart) {
+        // Width set ki gayi hai taaki mobile par properly render ho
         chart = LightweightCharts.createChart(chartContainer, {
-            width: chartContainer.clientWidth, height: 300,
+            width: chartContainer.clientWidth || 350, 
+            height: 300,
             layout: { background: { color: 'transparent' }, textColor: '#848e9c' },
             grid: { vertLines: { color: '#2b3139' }, horzLines: { color: '#2b3139' } },
             timeScale: { timeVisible: true },
+            rightPriceScale: { borderColor: '#2b3139' },
+            timeScale: { borderColor: '#2b3139' }
         });
         candleSeries = chart.addCandlestickSeries({ 
             upColor: '#0ecb81', 
@@ -106,6 +110,11 @@ async function loadChart() {
     
     candleSeries.setData(formattedData);
     chart.timeScale().fitContent();
+    
+    // Window resize hone par chart adjust karein
+    window.addEventListener('resize', () => {
+        if(chart) chart.applyOptions({ width: chartContainer.clientWidth });
+    });
 }
 
 async function loadMarkets() {
