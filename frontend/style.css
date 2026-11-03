@@ -1,9 +1,195 @@
-/* Trade Inputs & Buttons */
-#trade-amount:focus { outline: none; border-color: var(--accent-green); }
-.btn-buy, .btn-sell { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; transition: opacity 0.2s; }
-.btn-buy { background-color: var(--accent-green); color: #000; }
-.btn-sell { background-color: var(--accent-red); color: #fff; }
-.btn-buy:active, .btn-sell:active { opacity: 0.7; }
+:root {
+    --bg-main: #0b0e11;
+    --bg-card: #181a20;
+    --bg-input: #2b3139;
+    --text-main: #eaecef;
+    --text-muted: #848e9c;
+    --green: #0ecb81;
+    --red: #f6465d;
+    --border: #2b3139;
+}
 
-/* Close Button */
-.btn-close-trade { padding: 8px 12px; background: #f6465d; color: white; border: none; border-radius: 5px; font-weight: bold; margin-top: 10px; }
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    padding-bottom: 70px; /* Space for bottom nav */
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Header */
+.app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    background-color: var(--bg-main);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    border-bottom: 1px solid var(--border);
+}
+
+.logo {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-main);
+    letter-spacing: 0.5px;
+}
+
+.user-info {
+    font-size: 12px;
+    color: var(--text-muted);
+    background: var(--bg-card);
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+/* Main Content */
+.app-content {
+    padding: 15px;
+}
+
+.view { display: none; }
+.view.active { display: block; animation: fadeIn 0.3s ease-in-out; }
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.page-title {
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: var(--text-main);
+}
+
+/* Cards */
+.card {
+    background-color: var(--bg-card);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 15px;
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.card-title {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.balance-amount {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--green);
+}
+
+.signal-content {
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+/* Trade Panel */
+#trade-panel {
+    display: none; 
+    margin-top: 15px; 
+    border-top: 1px solid var(--border); 
+    padding-top: 15px;
+}
+
+#trade-amount {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 12px;
+    background: var(--bg-main);
+    border: 1px solid var(--border);
+    color: white;
+    border-radius: 8px;
+    font-size: 16px;
+}
+
+#trade-amount:focus {
+    outline: none;
+    border-color: var(--green);
+}
+
+.trade-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-buy, .btn-sell {
+    flex: 1;
+    padding: 14px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 16px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.btn-buy { background-color: var(--green); color: #000; }
+.btn-sell { background-color: var(--red); color: #fff; }
+.btn-buy:active, .btn-sell:active { opacity: 0.8; }
+
+/* Bottom Nav */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+    background-color: var(--bg-card);
+    border-top: 1px solid var(--border);
+    padding: 10px 0;
+    z-index: 10;
+}
+
+.nav-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 11px;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.nav-btn .icon { font-size: 22px; margin-bottom: 4px; }
+.nav-btn.active { color: var(--green); }
+
+/* Chart */
+#chart-container {
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--bg-main);
+}
+
+/* Trade List Close Button */
+.btn-close-trade {
+    width: 100%;
+    padding: 10px;
+    background: var(--red);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    margin-top: 12px;
+    cursor: pointer;
+}

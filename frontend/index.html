@@ -5,13 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AI Trading Terminal</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- TradingView Chart Library -->
     <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <header class="app-header">
-        <div class="logo">AI Terminal <span style="font-size:10px; color:#848e9c">v3</span></div>
+        <div class="logo">AI Terminal <span style="font-size:10px; color:#848e9c">v4</span></div>
         <div class="user-info" id="user-info">Loading...</div>
     </header>
 
@@ -29,9 +28,9 @@
                 <div id="latest-signal" class="signal-content">Loading...</div>
                 
                 <!-- Trade Execution Area -->
-                <div id="trade-panel" style="display: none; margin-top: 15px; border-top: 1px solid #2b3139; padding-top: 15px;">
-                    <input type="number" id="trade-amount" placeholder="Amount in USDT (e.g. 100)" style="width: 100%; padding: 10px; margin-bottom: 10px; background: #2b3139; border: 1px solid #444; color: white; border-radius: 5px;">
-                    <div style="display: flex; gap: 10px;">
+                <div id="trade-panel">
+                    <input type="number" id="trade-amount" placeholder="Amount in USDT (e.g. 100)">
+                    <div class="trade-buttons">
                         <button class="btn-buy" onclick="openTrade('BUY')">BUY</button>
                         <button class="btn-sell" onclick="openTrade('SELL')">SELL</button>
                     </div>
