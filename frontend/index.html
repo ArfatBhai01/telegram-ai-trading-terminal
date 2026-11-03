@@ -11,13 +11,13 @@
 
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-    <!-- TradingView Lightweight Charts -->
     <script src="https://unpkg.com/lightweight-charts@4.2.2/dist/lightweight-charts.standalone.production.js"></script>
 
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
+
     <header class="app-header">
         <div class="logo">
             AI Terminal <span class="version">v6</span>
@@ -39,7 +39,9 @@
                 </div>
             </div>
 
+            <!-- SIGNAL -->
             <div class="card signal-card">
+
                 <div class="card-title">Latest Signal</div>
 
                 <div id="latest-signal" class="signal-content">
@@ -47,6 +49,7 @@
                 </div>
 
                 <div id="trade-panel">
+
                     <input
                         type="number"
                         id="trade-amount"
@@ -56,37 +59,201 @@
                     >
 
                     <div class="trade-buttons">
-                        <button class="btn-buy" data-side="BUY">BUY</button>
-                        <button class="btn-sell" data-side="SELL">SELL</button>
+                        <button class="btn-buy" data-side="BUY">
+                            BUY
+                        </button>
+
+                        <button class="btn-sell" data-side="SELL">
+                            SELL
+                        </button>
                     </div>
+
                 </div>
             </div>
 
-            <!-- TRADINGVIEW CHART -->
+            <!-- CHART -->
             <div class="card chart-card">
 
                 <div class="chart-heading">
                     <div>
                         <div class="card-title">MARKET CHART</div>
-                        <h3 id="chart-title">BTC/USDT</h3>
+                        <h3 id="chart-title">BTC/USDT Chart</h3>
                     </div>
 
                     <span class="chart-timeframe">1H</span>
                 </div>
 
-                <div id="chart-container">
+                <!-- INDICATORS -->
+                <div class="chart-tool-section">
 
-                    <div id="tradingview-chart"></div>
+                    <div class="tool-group-title">
+                        Indicators
+                    </div>
 
-                    <div id="chart-loading" class="chart-overlay">
-                        <div class="loading-spinner"></div>
-                        <span id="chart-loading-text">Loading candles...</span>
+                    <div class="chart-toolbar" id="indicator-toolbar">
+
+                        <button class="chart-tool active"
+                                data-indicator="ema9">
+                            EMA 9
+                        </button>
+
+                        <button class="chart-tool active"
+                                data-indicator="ema21">
+                            EMA 21
+                        </button>
+
+                        <button class="chart-tool"
+                                data-indicator="ema50">
+                            EMA 50
+                        </button>
+
+                        <button class="chart-tool"
+                                data-indicator="ema200">
+                            EMA 200
+                        </button>
+
+                        <button class="chart-tool"
+                                data-indicator="sma20">
+                            SMA 20
+                        </button>
+
+                        <button class="chart-tool"
+                                data-indicator="bb">
+                            Bollinger
+                        </button>
+
+                    </div>
+
+                    <!-- DRAWING TOOLS -->
+                    <div class="tool-group-title">
+                        Drawing Tools
+                    </div>
+
+                    <div class="chart-toolbar" id="drawing-toolbar">
+
+                        <button class="chart-tool"
+                                data-draw="horizontal">
+                            Horizontal Line
+                        </button>
+
+                        <button class="chart-tool"
+                                data-draw="trend">
+                            Trendline
+                        </button>
+
+                        <button class="chart-tool"
+                                data-draw="ray">
+                            Ray
+                        </button>
+
+                        <button class="chart-tool"
+                                data-draw="rectangle">
+                            Rectangle
+                        </button>
+
+                        <button class="chart-tool"
+                                data-draw="fib">
+                            Fibonacci
+                        </button>
+
+                        <button class="chart-tool"
+                                data-draw="text">
+                            Text
+                        </button>
+
+                        <button class="chart-tool"
+                                data-draw="erase">
+                            Erase
+                        </button>
+
+                        <button class="chart-tool tool-clear"
+                                id="clear-drawings">
+                            Clear All
+                        </button>
+
+                    </div>
+
+                    <div class="tool-hint" id="drawing-hint">
+                        Choose a drawing tool, then tap or drag on the chart.
                     </div>
 
                 </div>
 
+                <!-- CHART CONTAINER -->
+                <div id="chart-container">
+
+                    <div id="tradingview-chart"></div>
+
+                    <svg id="drawing-layer"
+                         aria-label="Chart drawing layer">
+                    </svg>
+
+                    <div id="chart-loading" class="chart-overlay">
+
+                        <div class="loading-spinner"></div>
+
+                        <span id="chart-loading-text">
+                            Loading candles...
+                        </span>
+
+                    </div>
+
+                </div>
+
+                <!-- TECHNICAL ANALYSIS -->
+                <div class="analysis-panel">
+
+                    <div class="analysis-heading">
+                        Technical Analysis
+                        <span id="analysis-symbol">BTC/USDT</span>
+                    </div>
+
+                    <div class="analysis-grid">
+
+                        <div class="analysis-metric">
+                            <span>Trend</span>
+                            <strong id="analysis-trend">
+                                Calculating
+                            </strong>
+                        </div>
+
+                        <div class="analysis-metric">
+                            <span>RSI (14)</span>
+                            <strong id="analysis-rsi">—</strong>
+                        </div>
+
+                        <div class="analysis-metric">
+                            <span>MACD</span>
+                            <strong id="analysis-macd">—</strong>
+                        </div>
+
+                        <div class="analysis-metric">
+                            <span>Signal</span>
+                            <strong id="analysis-signal">—</strong>
+                        </div>
+
+                        <div class="analysis-metric">
+                            <span>Support</span>
+                            <strong id="analysis-support">—</strong>
+                        </div>
+
+                        <div class="analysis-metric">
+                            <span>Resistance</span>
+                            <strong id="analysis-resistance">—</strong>
+                        </div>
+
+                    </div>
+
+                    <p class="analysis-disclaimer">
+                        Technical indicators are estimates based on loaded
+                        candles. They are not financial advice or guaranteed
+                        predictions.
+                    </p>
+
+                </div>
+
                 <div class="chart-footer">
-                    <span>TradingView Lightweight Charts</span>
+                    <span>Lightweight Charts</span>
                     <span>1H Candles</span>
                 </div>
 
