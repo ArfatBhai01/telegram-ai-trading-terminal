@@ -1,72 +1,144 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <meta name="theme-color" content="#0b0e11">
     <title>AI Trading Terminal</title>
+
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- Chart.js (Hamesha chalne wali chart) -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- TradingView Lightweight Charts -->
+    <script src="https://unpkg.com/lightweight-charts@4.2.2/dist/lightweight-charts.standalone.production.js"></script>
+
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <header class="app-header">
-        <div class="logo">AI Terminal <span style="font-size:10px; color:#848e9c">v5</span></div>
+        <div class="logo">
+            AI Terminal <span class="version">v6</span>
+        </div>
         <div class="user-info" id="user-info">Loading...</div>
     </header>
 
-    <main class="app-content" id="main-content">
+    <main class="app-content">
+
+        <!-- DASHBOARD -->
         <section id="view-dashboard" class="view active">
+
             <h2 class="page-title">Dashboard</h2>
-            
+
             <div class="card balance-card">
                 <div class="card-title">Paper Balance</div>
-                <div class="balance-amount" id="paper-balance">$0.00</div>
+                <div class="balance-amount" id="paper-balance">
+                    Loading...
+                </div>
             </div>
-            
+
             <div class="card signal-card">
                 <div class="card-title">Latest Signal</div>
-                <div id="latest-signal" class="signal-content">Loading...</div>
-                
+
+                <div id="latest-signal" class="signal-content">
+                    Loading signal...
+                </div>
+
                 <div id="trade-panel">
-                    <input type="number" id="trade-amount" placeholder="Amount in USDT (e.g. 100)">
+                    <input
+                        type="number"
+                        id="trade-amount"
+                        placeholder="Amount in USDT (e.g. 100)"
+                        min="10"
+                        step="0.01"
+                    >
+
                     <div class="trade-buttons">
-                        <button class="btn-buy" onclick="openTrade('BUY')">BUY</button>
-                        <button class="btn-sell" onclick="openTrade('SELL')">SELL</button>
+                        <button class="btn-buy" data-side="BUY">BUY</button>
+                        <button class="btn-sell" data-side="SELL">SELL</button>
                     </div>
                 </div>
             </div>
 
+            <!-- TRADINGVIEW CHART -->
             <div class="card chart-card">
-                <div class="card-title" id="chart-title">Chart</div>
-                <div id="chart-container" style="width: 100%; height: 280px; position: relative;">
-                    <canvas id="myChartCanvas"></canvas>
+
+                <div class="chart-heading">
+                    <div>
+                        <div class="card-title">MARKET CHART</div>
+                        <h3 id="chart-title">BTC/USDT</h3>
+                    </div>
+
+                    <span class="chart-timeframe">1H</span>
                 </div>
+
+                <div id="chart-container">
+
+                    <div id="tradingview-chart"></div>
+
+                    <div id="chart-loading" class="chart-overlay">
+                        <div class="loading-spinner"></div>
+                        <span id="chart-loading-text">Loading candles...</span>
+                    </div>
+
+                </div>
+
+                <div class="chart-footer">
+                    <span>TradingView Lightweight Charts</span>
+                    <span>1H Candles</span>
+                </div>
+
             </div>
+
         </section>
 
+        <!-- MARKETS -->
         <section id="view-markets" class="view">
+
             <h2 class="page-title">Markets</h2>
-            <div class="market-list" id="market-list"></div>
+
+            <div id="market-list" class="market-list">
+                Loading markets...
+            </div>
+
         </section>
 
+        <!-- TRADES -->
         <section id="view-trades" class="view">
+
             <h2 class="page-title">My Trades</h2>
-            <div id="trades-list"></div>
+
+            <div id="trades-list">
+                Loading trades...
+            </div>
+
         </section>
+
     </main>
 
+    <!-- BOTTOM NAVIGATION -->
     <nav class="bottom-nav">
-        <button class="nav-btn active" onclick="switchTab('dashboard')">
-            <span class="icon">📊</span><span>Dashboard</span>
+
+        <button class="nav-btn active" data-tab="dashboard">
+            <span class="icon">📊</span>
+            <span>Dashboard</span>
         </button>
-        <button class="nav-btn" onclick="switchTab('markets')">
-            <span class="icon">📈</span><span>Markets</span>
+
+        <button class="nav-btn" data-tab="markets">
+            <span class="icon">📈</span>
+            <span>Markets</span>
         </button>
-        <button class="nav-btn" onclick="switchTab('trades')">
-            <span class="icon">💼</span><span>Trades</span>
+
+        <button class="nav-btn" data-tab="trades">
+            <span class="icon">💼</span>
+            <span>Trades</span>
         </button>
+
     </nav>
+
     <script src="app.js"></script>
+
 </body>
 </html>
