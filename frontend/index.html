@@ -5,12 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AI Trading Terminal</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+    <!-- Chart.js (Hamesha chalne wali chart) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <header class="app-header">
-        <div class="logo">AI Terminal <span style="font-size:10px; color:#848e9c">v4</span></div>
+        <div class="logo">AI Terminal <span style="font-size:10px; color:#848e9c">v5</span></div>
         <div class="user-info" id="user-info">Loading...</div>
     </header>
 
@@ -27,7 +28,6 @@
                 <div class="card-title">Latest Signal</div>
                 <div id="latest-signal" class="signal-content">Loading...</div>
                 
-                <!-- Trade Execution Area -->
                 <div id="trade-panel">
                     <input type="number" id="trade-amount" placeholder="Amount in USDT (e.g. 100)">
                     <div class="trade-buttons">
@@ -39,7 +39,9 @@
 
             <div class="card chart-card">
                 <div class="card-title" id="chart-title">Chart</div>
-                <div id="chart-container" style="width: 100%; height: 300px;"></div>
+                <div id="chart-container" style="width: 100%; height: 280px; position: relative;">
+                    <canvas id="myChartCanvas"></canvas>
+                </div>
             </div>
         </section>
 

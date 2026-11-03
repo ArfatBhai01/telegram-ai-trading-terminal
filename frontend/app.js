@@ -2,9 +2,8 @@ const tg = window.Telegram.WebApp;
 tg.expand();
 
 const API_BASE = "https://trading-terminal-backend-wxs8.onrender.com";
-let chart = null;
-let candleSeries = null;
 let currentSymbol = "BTC/USDT";
+let myChart = null;
 
 function initUser() {
     if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
@@ -73,54 +72,52 @@ async function loadDashboard() {
 }
 
 async function loadChart() {
-    if (typeof LightweightCharts === 'undefined') return;
-    
     document.getElementById('chart-title').innerText = `${currentSymbol} Chart`;
-    const chartContainer = document.getElementById('chart-container');
-    
-    chartContainer.innerHTML = '<div style="color: #848e9c; text-align: center; margin-top: 130px;">Loading Chart...</div>';
+    const ctx = document.getElementById('myChartCanvas').getContext('2d');
 
-    const data = await fetchAPI(`/api/market/candles?symbol=${currentSymbol}&market=crypto&timeframe=1h&limit=100`);
+    // Purana chart delete karein agar hai toh
+    if (myChart) { myChart.destroy(); }
+
+    const data = await fetchAPI(`/api/market/candles?symbol=${currentSymbol}&market=crypto&timeframe=1h&limit=50`);
     
     if (!data || !data.candles || data.candles.length === 0) {
-        chartContainer.innerHTML = '<div style="color: var(--red); text-align: center; margin-top: 130px;">Chart Data Unavailable</div>';
         return;
     }
     
-    chartContainer.innerHTML = "";
-    
-    // Container ki width nikalne ka pakka tarika
-    const width = chartContainer.clientWidth || window.innerWidth - 60;
+    const labels = data.candles.map(c => {
+        const d = new Date(c.time * 1000);
+        return d.getHours() + ":00";
+    });
+    const closePrices = data.candles.map(c => c.close);
 
-    if (!chart) {
-        chart = LightweightCharts.createChart(chartContainer, {
-            width: width, 
-            height: 280,
-            layout: { background: { color: 'transparent' }, textColor: '#848e9c' },
-            grid: { vertLines: { color: '#2b3139' }, horzLines: { color: '#2b3139' } },
-            timeScale: { timeVisible: true, borderColor: '#2b3139' },
-            rightPriceScale: { borderColor: '#2b3139' },
-            crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-        });
-        candleSeries = chart.addCandlestickSeries({ 
-            upColor: '#0ecb81', downColor: '#f6465d', borderVisible: false, 
-            wickUpColor: '#0ecb81', wickDownColor: '#f6465d' 
-        });
-    }
-    
-    const formattedData = data.candles.map(c => ({ 
-        time: c.time, open: c.open, high: c.high, low: c.low, close: c.close 
-    }));
-    
-    candleSeries.setData(formattedData);
-    
-    // Data aane ke baad chart ko adjust karein
-    setTimeout(() => {
-        if (chart) {
-            chart.applyOptions({ width: chartContainer.clientWidth });
-            chart.timeScale().fitContent();
+    myChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Price',
+                data: closePrices,
+                borderColor: '#0ecb81',
+                backgroundColor: 'rgba(14, 203, 129, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                pointRadius: 0,
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { display: false },
+                y: { 
+                    grid: { color: '#2b3139' },
+                    ticks: { color: '#848e9c' }
+                }
+            }
         }
-    }, 500);
+    });
 }
 
 async function loadMarkets() {
@@ -140,8 +137,6 @@ async function loadMarkets() {
 
 function selectMarket(symbol) {
     currentSymbol = symbol;
-    // Naya chart banane se pehle purana delete karein
-    if (chart) { chart.remove(); chart = null; candleSeries = null; }
     switchTab('dashboard');
     setTimeout(loadDashboard, 100); 
 }
