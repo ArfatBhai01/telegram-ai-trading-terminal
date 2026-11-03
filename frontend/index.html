@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI Trading Terminal</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="app-header">
+        <div class="logo">AI Terminal</div>
+        <div class="user-info" id="user-info">Loading...</div>
+    </header>
+
+    <main class="app-content" id="main-content">
+        <section id="view-dashboard" class="view active">
+            <h2 class="page-title">Dashboard</h2>
+            <div class="card balance-card">
+                <div class="card-title">Paper Balance</div>
+                <div class="balance-amount" id="paper-balance">$0.00</div>
+            </div>
+            <div class="card signal-card">
+                <div class="card-title">Latest BTC/USDT Signal (1h)</div>
+                <div id="latest-signal" class="signal-content">Loading...</div>
+            </div>
+            <div class="card chart-card">
+                <div class="card-title">BTC/USDT Chart</div>
+                <div id="chart-container" style="width: 100%; height: 300px;"></div>
+            </div>
+        </section>
+
+        <section id="view-markets" class="view">
+            <h2 class="page-title">Markets</h2>
+            <div class="market-list" id="market-list"></div>
+        </section>
+
+        <section id="view-trades" class="view">
+            <h2 class="page-title">My Paper Trades</h2>
+            <div id="trades-list"></div>
+        </section>
+    </main>
+
+    <nav class="bottom-nav">
+        <button class="nav-btn active" onclick="switchTab('dashboard')">
+            <span class="icon">📊</span><span>Dashboard</span>
+        </button>
+        <button class="nav-btn" onclick="switchTab('markets')">
+            <span class="icon">📈</span><span>Markets</span>
+        </button>
+        <button class="nav-btn" onclick="switchTab('trades')">
+            <span class="icon">💼</span><span>Trades</span>
+        </button>
+    </nav>
+    <script src="app.js"></script>
+</body>
+</html>
