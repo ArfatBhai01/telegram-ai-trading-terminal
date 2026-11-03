@@ -5,56 +5,41 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AI Trading Terminal</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://unpkg.com/lightweight-charts@4.2.2/dist/lightweight-charts.standalone.production.js"></script>
-    <link rel="stylesheet" href="style.css?v=2">
+    <!-- TradingView Chart Library -->
+    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <header class="app-header">
-        <div class="logo">AI Terminal</div>
+        <div class="logo">AI Terminal <span style="font-size:10px; color:#848e9c">v3</span></div>
         <div class="user-info" id="user-info">Loading...</div>
     </header>
 
     <main class="app-content" id="main-content">
         <section id="view-dashboard" class="view active">
-            <h2 class="page-title">Dashboard <span class="ver">(<span id="app-version">v2</span>)</span></h2>
-
-            <div class="card selected-card">
-                <div>
-                    <div class="card-title">Selected Market</div>
-                    <div class="selected-symbol" id="selected-symbol">BTC/USDT</div>
-                </div>
-                <div class="selected-price" id="selected-price">--</div>
-            </div>
-
+            <h2 class="page-title">Dashboard</h2>
+            
             <div class="card balance-card">
                 <div class="card-title">Paper Balance</div>
                 <div class="balance-amount" id="paper-balance">$0.00</div>
             </div>
-
+            
             <div class="card signal-card">
                 <div class="card-title">Latest Signal</div>
                 <div id="latest-signal" class="signal-content">Loading...</div>
-
-                <div class="amount-box">
-                    <label class="card-title" for="trade-amount">Trade Amount (USD)</label>
-                    <input id="trade-amount" class="amount-input" type="number"
-                           inputmode="decimal" min="1" step="any" value="100">
-                    <div class="amount-chips">
-                        <button type="button" class="amount-chip" data-amt="10">$10</button>
-                        <button type="button" class="amount-chip" data-amt="50">$50</button>
-                        <button type="button" class="amount-chip" data-amt="100">$100</button>
-                        <button type="button" class="amount-chip" data-amt="500">$500</button>
+                
+                <!-- Trade Execution Area -->
+                <div id="trade-panel" style="display: none; margin-top: 15px; border-top: 1px solid #2b3139; padding-top: 15px;">
+                    <input type="number" id="trade-amount" placeholder="Amount in USDT (e.g. 100)" style="width: 100%; padding: 10px; margin-bottom: 10px; background: #2b3139; border: 1px solid #444; color: white; border-radius: 5px;">
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn-buy" onclick="openTrade('BUY')">BUY</button>
+                        <button class="btn-sell" onclick="openTrade('SELL')">SELL</button>
                     </div>
-                </div>
-
-                <div id="trade-actions" style="display: flex; gap: 10px; margin-top: 15px;">
-                    <button class="btn-buy" onclick="openTrade('BUY')">BUY</button>
-                    <button class="btn-sell" onclick="openTrade('SELL')">SELL</button>
                 </div>
             </div>
 
             <div class="card chart-card">
-                <div class="card-title" id="chart-title">BTC/USDT Chart (Drag & Zoom)</div>
+                <div class="card-title" id="chart-title">Chart</div>
                 <div id="chart-container" style="width: 100%; height: 300px;"></div>
             </div>
         </section>
@@ -65,7 +50,7 @@
         </section>
 
         <section id="view-trades" class="view">
-            <h2 class="page-title">My Paper Trades</h2>
+            <h2 class="page-title">My Trades</h2>
             <div id="trades-list"></div>
         </section>
     </main>
@@ -81,6 +66,6 @@
             <span class="icon">💼</span><span>Trades</span>
         </button>
     </nav>
-    <script src="app.js?v=2"></script>
+    <script src="app.js"></script>
 </body>
 </html>
