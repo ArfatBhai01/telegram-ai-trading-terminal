@@ -1,13 +1,10 @@
 const tg = window.Telegram.WebApp;
 tg.expand();
 
-// Aapka permanent Render Backend link
 const API_BASE = "https://trading-terminal-backend-wxs8.onrender.com";
-
 let chart = null;
 let candleSeries = null;
 let currentSymbol = "BTC/USDT";
-let currentPrice = 0;
 
 function initUser() {
     if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
@@ -47,7 +44,6 @@ async function fetchAPI(endpoint, options = {}) {
 async function loadDashboard() {
     document.getElementById('paper-balance').innerText = "Loading...";
     
-    // 1. Load Balance
     const account = await fetchAPI('/api/paper/account');
     if (account) {
         document.getElementById('paper-balance').innerText = `$${account.balance.toFixed(2)}`;
@@ -55,27 +51,24 @@ async function loadDashboard() {
         document.getElementById('paper-balance').innerText = "DATA UNAVAILABLE";
     }
 
-    // 2. Load Signal
     const signal = await fetchAPI(`/api/signals/analyze?symbol=${currentSymbol}&market=crypto&timeframe=1h`);
     const signalEl = document.getElementById('latest-signal');
     const tradePanel = document.getElementById('trade-panel');
     
     if (signal && signal.action) {
-        let color = signal.action === 'BUY' ? 'var(--accent-green)' : signal.action === 'SELL' ? 'var(--accent-red)' : 'var(--text-muted)';
+        let color = signal.action === 'BUY' ? 'var(--green)' : signal.action === 'SELL' ? 'var(--red)' : 'var(--text-muted)';
         signalEl.innerHTML = `<div style="font-size: 24px; font-weight: bold; color: ${color}; margin-bottom: 10px;">${signal.action}</div><div style="color: var(--text-muted); font-size: 12px;">${signal.reasons.join("<br>• ")}</div>`;
         
         if (signal.action === 'BUY' || signal.action === 'SELL') {
             tradePanel.style.display = 'block';
-            if (signal.entry_zone) currentPrice = signal.entry_zone[1];
         } else {
             tradePanel.style.display = 'none';
         }
     } else { 
-        signalEl.innerHTML = `<span style="color:red">DATA UNAVAILABLE</span>`; 
+        signalEl.innerHTML = `<span style="color:var(--red)">DATA UNAVAILABLE</span>`; 
         tradePanel.style.display = 'none';
     }
     
-    // 3. Load Chart
     loadChart();
 }
 
@@ -90,22 +83,23 @@ async function loadChart() {
     const data = await fetchAPI(`/api/market/candles?symbol=${currentSymbol}&market=crypto&timeframe=1h&limit=100`);
     
     if (!data || !data.candles || data.candles.length === 0) {
-        chartContainer.innerHTML = '<div style="color: #f6465d; text-align: center; margin-top: 130px;">Chart Data Unavailable</div>';
+        chartContainer.innerHTML = '<div style="color: var(--red); text-align: center; margin-top: 130px;">Chart Data Unavailable</div>';
         return;
     }
     
     chartContainer.innerHTML = "";
-
-    // Chart ko fix size dein taaki mobile par blank na dikhe
-    const chartWidth = chartContainer.clientWidth > 0 ? chartContainer.clientWidth : window.innerWidth - 40;
+    
+    // Container ki width nikalne ka pakka tarika
+    const width = chartContainer.clientWidth || window.innerWidth - 60;
 
     if (!chart) {
         chart = LightweightCharts.createChart(chartContainer, {
-            width: chartWidth, 
-            height: 300,
+            width: width, 
+            height: 280,
             layout: { background: { color: 'transparent' }, textColor: '#848e9c' },
             grid: { vertLines: { color: '#2b3139' }, horzLines: { color: '#2b3139' } },
-            timeScale: { timeVisible: true },
+            timeScale: { timeVisible: true, borderColor: '#2b3139' },
+            rightPriceScale: { borderColor: '#2b3139' },
             crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
         });
         candleSeries = chart.addCandlestickSeries({ 
@@ -120,8 +114,13 @@ async function loadChart() {
     
     candleSeries.setData(formattedData);
     
-    // Chart load hone ke baad fit karein
-    setTimeout(() => { if (chart) chart.timeScale().fitContent(); }, 500);
+    // Data aane ke baad chart ko adjust karein
+    setTimeout(() => {
+        if (chart) {
+            chart.applyOptions({ width: chartContainer.clientWidth });
+            chart.timeScale().fitContent();
+        }
+    }, 500);
 }
 
 async function loadMarkets() {
@@ -141,7 +140,8 @@ async function loadMarkets() {
 
 function selectMarket(symbol) {
     currentSymbol = symbol;
-    if (chart) { chart.remove(); chart = null; candleSeries = null; } // Purana chart delete karein
+    // Naya chart banane se pehle purana delete karein
+    if (chart) { chart.remove(); chart = null; candleSeries = null; }
     switchTab('dashboard');
     setTimeout(loadDashboard, 100); 
 }
@@ -196,7 +196,7 @@ async function loadTrades() {
     container.innerHTML = trades.map(t => {
         const isOpen = t.status === "OPEN";
         const pnl = t.realized_pnl ? t.realized_pnl.toFixed(2) : null;
-        const pnlColor = pnl > 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+        const pnlColor = pnl > 0 ? 'var(--green)' : 'var(--red)';
         
         let closeBtn = '';
         if (isOpen) {
@@ -204,10 +204,10 @@ async function loadTrades() {
         }
 
         return `
-            <div class="card" style="border-left: 4px solid ${t.side === 'BUY' ? 'var(--accent-green)' : 'var(--accent-red)'}">
+            <div class="card" style="border-left: 4px solid ${t.side === 'BUY' ? 'var(--green)' : 'var(--red)'}">
                 <div style="display: flex; justify-content: space-between;">
                     <strong>${t.symbol}</strong>
-                    <span style="color: ${t.side === 'BUY' ? 'var(--accent-green)' : 'var(--accent-red)'}">${t.side}</span>
+                    <span style="color: ${t.side === 'BUY' ? 'var(--green)' : 'var(--red)'}">${t.side}</span>
                 </div>
                 <div style="font-size: 12px; color: var(--text-muted); margin-top: 5px;">
                     Entry: $${t.entry_price.toFixed(2)} | Qty: ${t.quantity.toFixed(4)}<br>
@@ -232,6 +232,7 @@ async function closeTrade(tradeId) {
     if (result) {
         alert(`Trade Closed! PnL: $${result.realized_pnl.toFixed(2)}`);
         loadTrades();
+        loadDashboard();
     } else {
         alert("Failed to close trade.");
     }
@@ -239,5 +240,5 @@ async function closeTrade(tradeId) {
 
 document.addEventListener('DOMContentLoaded', () => { 
     initUser(); 
-    setTimeout(loadDashboard, 1500); // 1.5 second wait taaki backend ready ho
+    setTimeout(loadDashboard, 1000);
 });
