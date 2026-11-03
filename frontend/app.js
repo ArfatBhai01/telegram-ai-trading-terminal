@@ -2,9 +2,7 @@ const tg = window.Telegram.WebApp;
 tg.expand();
 
 const API_BASE = "https://trading-terminal-backend-wxs8.onrender.com";
-
-let chart = null;
-let candleSeries = null;
+let myChart = null;
 
 function initUser() {
     if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
@@ -30,7 +28,6 @@ async function fetchAPI(endpoint) {
     if (tg.initData) {
         headers['X-Telegram-Init-Data'] = tg.initData;
     }
-    
     try {
         const res = await fetch(`${API_BASE}${endpoint}`, { headers });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -62,56 +59,55 @@ async function loadDashboard() {
 }
 
 async function loadChart() {
-    if (typeof LightweightCharts === 'undefined') {
-        console.error("Chart library not loaded");
-        return;
-    }
-    
     const chartContainer = document.getElementById('chart-container');
     chartContainer.innerHTML = '<div style="color: #848e9c; text-align: center; margin-top: 130px;">Loading Chart...</div>';
 
     const data = await fetchAPI('/api/market/candles?symbol=BTC/USDT&market=crypto&timeframe=1h&limit=50');
     
-    // Agar data nahi aaya
     if (!data || !data.candles || data.candles.length === 0) {
         chartContainer.innerHTML = '<div style="color: #f6465d; text-align: center; margin-top: 130px;">Chart Data Unavailable</div>';
         return;
     }
     
-    // Data aa gaya, ab container clear karein
-    chartContainer.innerHTML = "";
+    chartContainer.innerHTML = '<canvas id="myChartCanvas"></canvas>';
+    const ctx = document.getElementById('myChartCanvas').getContext('2d');
 
-    // Agar chart pehle se nahi bana hai, toh naya banayein
-    if (!chart) {
-        // Width aur height forcibly set kar rahe hain
-        chart = LightweightCharts.createChart(chartContainer, {
-            width: chartContainer.clientWidth || 350, 
-            height: 280, 
-            layout: { background: { color: 'transparent' }, textColor: '#848e9c' },
-            grid: { vertLines: { color: '#2b3139' }, horzLines: { color: '#2b3139' } },
-            timeScale: { timeVisible: true },
-        });
-        
-        candleSeries = chart.addCandlestickSeries({ 
-            upColor: '#0ecb81', 
-            downColor: '#f6465d', 
-            borderVisible: false, 
-            wickUpColor: '#0ecb81', 
-            wickDownColor: '#f6465d' 
-        });
-    }
-    
-    // Data format karein
-    const formattedData = data.candles.map(c => ({ 
-        time: c.time, 
-        open: c.open, 
-        high: c.high, 
-        low: c.low, 
-        close: c.close 
-    }));
-    
-    candleSeries.setData(formattedData);
-    chart.timeScale().fitContent();
+    if (myChart) { myChart.destroy(); }
+
+    const labels = data.candles.map(c => {
+        const d = new Date(c.time * 1000);
+        return d.getHours() + ":00";
+    });
+    const closePrices = data.candles.map(c => c.close);
+
+    myChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'BTC Price',
+                data: closePrices,
+                borderColor: '#0ecb81',
+                backgroundColor: 'rgba(14, 203, 129, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                pointRadius: 0,
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { display: false },
+                y: { 
+                    grid: { color: '#2b3139' },
+                    ticks: { color: '#848e9c' }
+                }
+            }
+        }
+    });
 }
 
 async function loadMarkets() {
@@ -138,5 +134,5 @@ async function loadTrades() {
 
 document.addEventListener('DOMContentLoaded', () => { 
     initUser(); 
-    setTimeout(loadDashboard, 1500); // Thoda wait karke load karein taaki backend ready ho
+    setTimeout(loadDashboard, 1000);
 });
