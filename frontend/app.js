@@ -26,15 +26,22 @@ function switchTab(tabId) {
     if (tabId === 'trades') loadTrades();
 }
 
-// Clean fetch function (No Ngrok code)
+// Updated fetchAPI with 45-second timeout
 async function fetchAPI(endpoint) {
     const headers = {};
     if (tg.initData) {
         headers['X-Telegram-Init-Data'] = tg.initData;
     }
     
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 45000); // 45 seconds wait
+
     try {
-        const res = await fetch(`${API_BASE}${endpoint}`, { headers });
+        const res = await fetch(`${API_BASE}${endpoint}`, { 
+            headers,
+            signal: controller.signal 
+        });
+        clearTimeout(timeoutId);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return await res.json();
     } catch (err) { 
@@ -44,23 +51,40 @@ async function fetchAPI(endpoint) {
 }
 
 async function loadDashboard() {
+    document.getElementById('paper-balance').innerText = "Loading...";
+    document.getElementById('latest-signal').innerText = "Loading...";
+
     const account = await fetchAPI('/api/paper/account');
     document.getElementById('paper-balance').innerText = account ? `$${account.balance.toFixed(2)}` : "DATA UNAVAILABLE";
 
     const signal = await fetchAPI('/api/signals/analyze?symbol=BTC/USDT&market=crypto&timeframe=1h');
     const signalEl = document.getElementById('latest-signal');
-    if (signal) {
+    if (signal && signal.action) {
         let color = signal.action === 'BUY' ? 'var(--accent-green)' : signal.action === 'SELL' ? 'var(--accent-red)' : 'var(--text-muted)';
         signalEl.innerHTML = `<div style="font-size: 24px; font-weight: bold; color: ${color}; margin-bottom: 10px;">${signal.action}</div><div style="color: var(--text-muted); font-size: 12px;">${signal.reasons.join("<br>• ")}</div>`;
     } else { signalEl.innerHTML = `<span style="color:red">DATA UNAVAILABLE</span>`; }
+    
     loadChart();
 }
 
 async function loadChart() {
     if (typeof LightweightCharts === 'undefined') return;
-    const data = await fetchAPI('/api/market/candles?symbol=BTC/USDT&market=crypto&timeframe=1h&limit=50');
-    if (!data || !data.candles) return;
     const chartContainer = document.getElementById('chart-container');
+    
+    // Show loading text
+    if (!chart) {
+        chartContainer.innerHTML = '<div style="color: #848e9c; text-align: center; margin-top: 100px;">Loading Chart Data...</div>';
+    }
+
+    const data = await fetchAPI('/api/market/candles?symbol=BTC/USDT&market=crypto&timeframe=1h&limit=50');
+    
+    if (!data || !data.candles || data.candles.length === 0) {
+        chartContainer.innerHTML = '<div style="color: #f6465d; text-align: center; margin-top: 100px;">Chart Data Unavailable</div>';
+        return;
+    }
+    
+    chartContainer.innerHTML = ""; // Clear loading text
+
     if (!chart) {
         chart = LightweightCharts.createChart(chartContainer, {
             width: chartContainer.clientWidth, height: 300,
@@ -80,6 +104,8 @@ async function loadMarkets() {
     const data = await fetchAPI('/api/market/symbols');
     if (data && data.crypto) {
         container.innerHTML = data.crypto.map(sym => `<div class="card"><strong>${sym}</strong></div>`).join('');
+    } else {
+        container.innerHTML = 'Failed to load markets.';
     }
 }
 
