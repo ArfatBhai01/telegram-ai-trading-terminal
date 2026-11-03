@@ -64,10 +64,9 @@ async function loadDashboard() {
         let color = signal.action === 'BUY' ? 'var(--accent-green)' : signal.action === 'SELL' ? 'var(--accent-red)' : 'var(--text-muted)';
         signalEl.innerHTML = `<div style="font-size: 24px; font-weight: bold; color: ${color}; margin-bottom: 10px;">${signal.action}</div><div style="color: var(--text-muted); font-size: 12px;">${signal.reasons.join("<br>• ")}</div>`;
         
-        // Trade panel sirf tab dikhayein jab valid signal ho
         if (signal.action === 'BUY' || signal.action === 'SELL') {
             tradePanel.style.display = 'block';
-            if (signal.entry_zone) currentPrice = signal.entry_zone[1]; // For estimation
+            if (signal.entry_zone) currentPrice = signal.entry_zone[1];
         } else {
             tradePanel.style.display = 'none';
         }
@@ -97,9 +96,12 @@ async function loadChart() {
     
     chartContainer.innerHTML = "";
 
+    // Chart ko fix size dein taaki mobile par blank na dikhe
+    const chartWidth = chartContainer.clientWidth > 0 ? chartContainer.clientWidth : window.innerWidth - 40;
+
     if (!chart) {
         chart = LightweightCharts.createChart(chartContainer, {
-            width: chartContainer.clientWidth || 350, 
+            width: chartWidth, 
             height: 300,
             layout: { background: { color: 'transparent' }, textColor: '#848e9c' },
             grid: { vertLines: { color: '#2b3139' }, horzLines: { color: '#2b3139' } },
@@ -116,9 +118,10 @@ async function loadChart() {
         time: c.time, open: c.open, high: c.high, low: c.low, close: c.close 
     }));
     
-    // Chart update karein aur fit karein
     candleSeries.setData(formattedData);
-    setTimeout(() => { if (chart) chart.timeScale().fitContent(); }, 300);
+    
+    // Chart load hone ke baad fit karein
+    setTimeout(() => { if (chart) chart.timeScale().fitContent(); }, 500);
 }
 
 async function loadMarkets() {
@@ -138,13 +141,11 @@ async function loadMarkets() {
 
 function selectMarket(symbol) {
     currentSymbol = symbol;
-    // Chart ko reset karein taaki naya symbol load ho
-    if (chart) { chart.remove(); chart = null; candleSeries = null; }
+    if (chart) { chart.remove(); chart = null; candleSeries = null; } // Purana chart delete karein
     switchTab('dashboard');
     setTimeout(loadDashboard, 100); 
 }
 
-// Trade Open
 async function openTrade(side) {
     const amountInput = document.getElementById('trade-amount').value;
     const amount = parseFloat(amountInput);
@@ -154,7 +155,6 @@ async function openTrade(side) {
         return;
     }
 
-    // Price current market price se fetch karein
     const marketData = await fetchAPI(`/api/market/candles?symbol=${currentSymbol}&market=crypto&timeframe=1h&limit=1`);
     if (!marketData || !marketData.candles || marketData.candles.length === 0) {
         alert("Failed to get current price. Try again.");
@@ -176,13 +176,12 @@ async function openTrade(side) {
 
     if (trade) {
         alert(`${side} Trade Opened at $${entryPrice.toFixed(2)}`);
-        loadDashboard(); // Balance refresh karein
+        loadDashboard();
     } else {
         alert("Failed to open trade. Check balance.");
     }
 }
 
-// Load Trades (Open + Closed)
 async function loadTrades() {
     const container = document.getElementById('trades-list');
     container.innerHTML = 'Loading...';
@@ -221,7 +220,6 @@ async function loadTrades() {
     }).join('');
 }
 
-// Close Trade
 async function closeTrade(tradeId) {
     const marketData = await fetchAPI(`/api/market/candles?symbol=${currentSymbol}&market=crypto&timeframe=1h&limit=1`);
     const currentPrice = marketData.candles[0].close;
@@ -241,5 +239,5 @@ async function closeTrade(tradeId) {
 
 document.addEventListener('DOMContentLoaded', () => { 
     initUser(); 
-    setTimeout(loadDashboard, 1000);
+    setTimeout(loadDashboard, 1500); // 1.5 second wait taaki backend ready ho
 });
