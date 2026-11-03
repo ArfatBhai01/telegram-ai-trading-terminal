@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AI Trading Terminal</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -22,12 +21,19 @@
                 <div class="card-title">Paper Balance</div>
                 <div class="balance-amount" id="paper-balance">$0.00</div>
             </div>
+            
             <div class="card signal-card">
-                <div class="card-title">Latest BTC/USDT Signal (1h)</div>
+                <div class="card-title">Latest Signal</div>
                 <div id="latest-signal" class="signal-content">Loading...</div>
+                <!-- Trade Buttons -->
+                <div id="trade-actions" style="display: none; gap: 10px; margin-top: 15px;">
+                    <button class="btn-buy" onclick="openTrade('BUY')">BUY</button>
+                    <button class="btn-sell" onclick="openTrade('SELL')">SELL</button>
+                </div>
             </div>
+
             <div class="card chart-card">
-                <div class="card-title">BTC/USDT Chart</div>
+                <div class="card-title">BTC/USDT Chart (Drag & Zoom)</div>
                 <div id="chart-container" style="width: 100%; height: 300px;"></div>
             </div>
         </section>
