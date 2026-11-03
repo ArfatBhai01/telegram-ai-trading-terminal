@@ -61,7 +61,6 @@ def create_app() -> FastAPI:
     app.state.limiter = limiter
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-    # CORS FIX: Frontend aur Backend alag-alag domains par hain, isliye allow_origins=["*"] zaroori hai
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"], 
@@ -70,9 +69,28 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    # --- HEALTH ROUTE (UptimeRobot ke liye) ---
     @app.get("/health", tags=["health"])
+    @app.head("/health", tags=["health"])  # HEAD method bhi accept karega
     async def health_simple():
         return {"status": "ok"}
+
+    @app.get("/api/health", response_model=HealthResponse, tags=["health"])
+    async def health_detailed():
+        db_status = "ok"
+        try:
+            with engine.connect() as conn:
+                conn.execute(text("SELECT 1"))
+        except Exception as exc:
+            db_status = f"error: {exc.__class__.__name__}"
+        return HealthResponse(
+            status="ok" if db_status == "ok" else "degraded",
+            app_name=_settings.app_name,
+            app_version=_settings.app_version,
+            environment=_settings.app_env,
+            database=db_status,
+            timestamp=datetime.now(timezone.utc),
+        )
 
     @app.get("/api/me", tags=["user"])
     async def get_me(current_user: User = Depends(get_current_user)):
