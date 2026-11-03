@@ -2,7 +2,7 @@ const tg = window.Telegram.WebApp;
 tg.expand();
 
 // Yahan aapka Backend link daal diya gaya hai
-const API_BASE = "https://likewise-vanity-skipper.ngrok-free.dev";
+const API_BASE = "https://trading-terminal-backend-wxs8.onrender.com";
 
 let chart = null;
 let candleSeries = null;
