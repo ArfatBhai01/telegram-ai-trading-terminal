@@ -1,7 +1,7 @@
 const tg = window.Telegram.WebApp;
 tg.expand();
 
-// Yahan aapka Backend link daal diya gaya hai
+// Aapka permanent Render Backend link
 const API_BASE = "https://trading-terminal-backend-wxs8.onrender.com";
 
 let chart = null;
@@ -26,16 +26,15 @@ function switchTab(tabId) {
     if (tabId === 'trades') loadTrades();
 }
 
+// Clean fetch function (No Ngrok code)
 async function fetchAPI(endpoint) {
     const headers = {};
-    if (tg.initData) headers['X-Telegram-Init-Data'] = tg.initData;
-    
-    // Ngrok warning bypass karne ke liye yeh zaroori hai
-    const separator = endpoint.includes('?') ? '&' : '?';
-    const finalUrl = `${API_BASE}${endpoint}${separator}ngrok-skip-browser-warning=true`;
+    if (tg.initData) {
+        headers['X-Telegram-Init-Data'] = tg.initData;
+    }
     
     try {
-        const res = await fetch(finalUrl, { headers });
+        const res = await fetch(`${API_BASE}${endpoint}`, { headers });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return await res.json();
     } catch (err) { 
