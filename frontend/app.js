@@ -5,8 +5,7 @@ const API_BASE = "https://trading-terminal-backend-wxs8.onrender.com";
 
 let chart = null;
 let candleSeries = null;
-let currentSymbol = "BTC/USDT"; // Default symbol
-let currentSignalAction = null;
+let currentSymbol = "BTC/USDT";
 
 function initUser() {
     if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
@@ -54,11 +53,9 @@ async function loadDashboard() {
     const tradeActions = document.getElementById('trade-actions');
     
     if (signal && signal.action) {
-        currentSignalAction = signal.action;
         let color = signal.action === 'BUY' ? 'var(--accent-green)' : signal.action === 'SELL' ? 'var(--accent-red)' : 'var(--text-muted)';
         signalEl.innerHTML = `<div style="font-size: 24px; font-weight: bold; color: ${color}; margin-bottom: 10px;">${signal.action}</div><div style="color: var(--text-muted); font-size: 12px;">${signal.reasons.join("<br>• ")}</div>`;
         
-        // Show buttons only if there's a clear signal
         if (signal.action === 'BUY' || signal.action === 'SELL') {
             tradeActions.style.display = 'flex';
         } else {
@@ -76,13 +73,17 @@ async function loadChart() {
     if (typeof LightweightCharts === 'undefined') return;
     
     const chartContainer = document.getElementById('chart-container');
-    
-    // Data fetch karein
+    chartContainer.innerHTML = '<div style="color: #848e9c; text-align: center; margin-top: 130px;">Loading Chart...</div>';
+
     const data = await fetchAPI(`/api/market/candles?symbol=${currentSymbol}&market=crypto&timeframe=1h&limit=100`);
     
-    if (!data || !data.candles || data.candles.length === 0) return;
+    if (!data || !data.candles || data.candles.length === 0) {
+        chartContainer.innerHTML = '<div style="color: #f6465d; text-align: center; margin-top: 130px;">Chart Data Unavailable</div>';
+        return;
+    }
+    
+    chartContainer.innerHTML = "";
 
-    // Chart ko sirf ek baar banayein
     if (!chart) {
         chart = LightweightCharts.createChart(chartContainer, {
             width: chartContainer.clientWidth || 350, 
@@ -90,7 +91,7 @@ async function loadChart() {
             layout: { background: { color: 'transparent' }, textColor: '#848e9c' },
             grid: { vertLines: { color: '#2b3139' }, horzLines: { color: '#2b3139' } },
             timeScale: { timeVisible: true },
-            crosshair: { mode: LightweightCharts.CrosshairMode.Normal }, // Smooth crosshair for mobile
+            crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
         });
         candleSeries = chart.addCandlestickSeries({ 
             upColor: '#0ecb81', downColor: '#f6465d', borderVisible: false, 
@@ -98,13 +99,15 @@ async function loadChart() {
         });
     }
     
-    // Data update karein
     const formattedData = data.candles.map(c => ({ 
         time: c.time, open: c.open, high: c.high, low: c.low, close: c.close 
     }));
     
     candleSeries.setData(formattedData);
-    chart.timeScale().fitContent();
+    
+    setTimeout(() => {
+        if (chart) chart.timeScale().fitContent();
+    }, 300);
 }
 
 async function loadMarkets() {
@@ -112,7 +115,6 @@ async function loadMarkets() {
     container.innerHTML = 'Loading...';
     const data = await fetchAPI('/api/market/symbols');
     if (data && data.crypto) {
-        // Tap karne par us market ka chart aur signal load ho
         container.innerHTML = data.crypto.map(sym => `
             <div class="card" onclick="selectMarket('${sym}')">
                 <strong>${sym}</strong>
@@ -123,11 +125,9 @@ async function loadMarkets() {
     }
 }
 
-// Jab market par tap karein
 function selectMarket(symbol) {
     currentSymbol = symbol;
-    switchTab('dashboard'); // Dashboard par wapas jayein
-    // Thoda wait karke load karein taaki UI update ho
+    switchTab('dashboard');
     setTimeout(loadDashboard, 100); 
 }
 
@@ -142,7 +142,6 @@ async function loadTrades() {
     }
 }
 
-// Trade Open karne ka function
 async function openTrade(side) {
     const signal = await fetchAPI(`/api/signals/analyze?symbol=${currentSymbol}&market=crypto&timeframe=1h`);
     if (!signal || !signal.entry_zone) {
@@ -150,9 +149,8 @@ async function openTrade(side) {
         return;
     }
 
-    // Entry price as current close
     const entryPrice = signal.entry_zone[1] || signal.indicators.ema9; 
-    const qty = 0.01; // Choti quantity test ke liye
+    const qty = 0.01;
 
     const trade = await fetchAPI('/api/paper/trade/open', {
         method: 'POST',
@@ -165,8 +163,8 @@ async function openTrade(side) {
     });
 
     if (trade) {
-        alert(`${side} Trade Opened Successfully at $${entryPrice}`);
-        loadDashboard(); // Balance update karein
+        alert(`${side} Trade Opened at $${entryPrice.toFixed(2)}`);
+        loadDashboard();
     } else {
         alert("Failed to open trade.");
     }
