@@ -8,13 +8,11 @@ from backend.config import get_settings
 _settings = get_settings()
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Send a message with a button to open the Mini App."""
+    """Send welcome message with the app button."""
     user = update.effective_user
     
     # Aapka frontend URL
-    # Agar aap local laptop par test kar rahe hain, toh aapko ngrok ya similar tool use karna padega.
-    # Abhi ke liye hum aapke Render URL ya local URL ka use karenge.
-    miniapp_url = _settings.telegram_miniapp_url or "http://127.0.0.1:5500"
+    miniapp_url = _settings.telegram_miniapp_url or "https://trading-terminal-app.onrender.com"
     
     keyboard = [
         [InlineKeyboardButton("Open Trading App 📈", web_app=WebAppInfo(url=miniapp_url))]
@@ -36,11 +34,5 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send a help message."""
-    help_text = (
-        "*Available Commands:*\n"
-        "/start - Open the trading app\n"
-        "/help - Show this help message\n\n"
-        "*Disclaimer:*\n"
-        "This bot is for educational purposes only. Signals are not financial advice. We do not promise profits."
-    )
-    await update.message.reply_text(help_text, parse_mode="Markdown")
+    help_text = "Use /start to open the trading app."
+    await update.message.reply_text(help_text)
