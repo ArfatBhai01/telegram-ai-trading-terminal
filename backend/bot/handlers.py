@@ -11,8 +11,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send welcome message with the app button."""
     user = update.effective_user
     
-    # Aapka frontend URL
-    miniapp_url = _settings.telegram_miniapp_url or "https://trading-terminal-app.onrender.com"
+    # URL set to maintenance page
+    miniapp_url = "https://trading-terminal-app.onrender.com/maintenance.html"
     
     keyboard = [
         [InlineKeyboardButton("Open Trading App 📈", web_app=WebAppInfo(url=miniapp_url))]
